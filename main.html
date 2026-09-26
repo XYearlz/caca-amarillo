@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minecraft 24/7 Bot</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        font-family: Arial, sans-serif;
+        background: #f0f0f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        width: 100%;
+        max-width: 500px;
+        background: #fff;
+        border: 1px solid #e1e1e1;
+        border-radius: 10px;
+        padding: 28px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.1);
+      }
+      h1 { text-align: center; color: #007bff; margin: 0 0 8px; }
+      .subtitle { text-align: center; color: #666; margin: 0 0 24px; }
+      label { display: block; margin: 14px 0 6px; font-weight: bold; color: #333; }
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+        outline: none;
+      }
+      input:focus { border-color: #007bff; }
+      .status {
+        margin-top: 20px;
+        padding: 12px;
+        background: #f7f7f7;
+        border-radius: 6px;
+        text-align: center;
+        color: #555;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      button {
+        padding: 12px;
+        font-size: 16px;
+        cursor: pointer;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+      }
+      button:hover { background: #0056b3; }
+      button.stop { background: #dc3545; }
+      button.stop:hover { background: #a71d2a; }
+      button.reconnect { background: #28a745; grid-column: 1 / -1; }
+      button.reconnect:hover { background: #1c7430; }
+      @media (max-width: 450px) {
+        .container { padding: 20px; }
+        .buttons { grid-template-columns: 1fr; }
+        button.reconnect { grid-column: auto; }
+      }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Minecraft 24/7 Bot</h1>
+      <p class="subtitle">Configura el bot y conéctalo a tu servidor</p>
+
+      <label for="serverHost">IP / Host del servidor</label>
+      <input id="serverHost" type="text" placeholder="ejemplo.aternos.me" autocomplete="off" />
+
+      <label for="serverPort">Puerto</label>
+      <input id="serverPort" type="number" min="1" max="65535" value="25565" placeholder="25565" />
+
+      <label for="botUsername">Username del bot</label>
+      <input id="botUsername" type="text" maxlength="16" placeholder="MiBot" autocomplete="off" />
+
+      <div class="status" id="botStatus">Conectando con el panel...</div>
+
+      <div class="buttons">
+        <button onclick="startBot()">Start Bot</button>
+        <button class="stop" onclick="stopBot()">Stop Bot</button>
+        <button class="reconnect" onclick="reconnectBot()">Reconnect Bot</button>
+      </div>
+    </div>
+
+    <script>
+      const socket = io();
+
+      socket.on('connect', () => setStatus('Panel conectado. Configura el bot.'));
+      socket.on('disconnect', () => setStatus('Panel desconectado del servidor.'));
+      socket.on('bot_status', (msg) => setStatus(msg));
+
+      function setStatus(message) {
+        const statusElement = document.getElementById('botStatus');
+        if (statusElement) statusElement.innerText = message;
+      }
+
+      function getConfig() {
+        return {
+          host: document.getElementById('serverHost').value.trim(),
+          port: Number(document.getElementById('serverPort').value),
+          username: document.getElementById('botUsername').value.trim(),
+        };
+      }
+
+      function startBot() {
+        const config = getConfig();
+        if (!config.host || !config.port || !config.username) {
+          setStatus('Completa IP, puerto y username.');
+          return;
+        }
+        setStatus('Enviando configuración...');
+        socket.emit('control_bot', { command: 'start', config });
+      }
+
+      function stopBot() {
+        socket.emit('control_bot', { command: 'stop' });
+      }
+
+      function reconnectBot() {
+        socket.emit('control_bot', { command: 'reconnect' });
+      }
+    </script>
+  </body>
+</html>
